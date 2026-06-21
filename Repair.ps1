@@ -1,0 +1,10 @@
+#requires -Version 5.1
+<# Created by Dewald Pretorius. #>
+[CmdletBinding(SupportsShouldProcess=$true)]
+param([ValidateSet('Diagnose','ResetPerformanceCaches','RepairOffice')][string]$Action='Diagnose',[string]$OutputPath=(Join-Path ([Environment]::GetFolderPath('Desktop')) 'Excel_Performance_Repair'))
+$ErrorActionPreference='Stop';$cachePaths=@("$env:LOCALAPPDATA\Microsoft\Office\16.0\OfficeFileCache","$env:LOCALAPPDATA\Microsoft\Office\OTele")
+New-Item -ItemType Directory -Path $OutputPath -Force|Out-Null;$stamp=Get-Date -Format yyyyMMdd_HHmmss;$log=Join-Path $OutputPath "Repair_$stamp.log";function Log($m){$l='{0:u} {1}'-f(Get-Date),$m;Write-Host $l;Add-Content $log $l}
+[ordered]@{Action=$Action;Excel=@(Get-Process EXCEL -ErrorAction SilentlyContinue|Select-Object Name,Id,WorkingSet,CPU);Caches=@($cachePaths|ForEach-Object{[pscustomobject]@{Path=$_;Exists=Test-Path $_}})}|ConvertTo-Json -Depth 5|Set-Content (Join-Path $OutputPath "PreRepair_$stamp.json")
+if($Action -eq 'Diagnose'){Log '[COMPLETE] Snapshot saved.';exit 0}
+try{if($Action -eq 'ResetPerformanceCaches' -and $PSCmdlet.ShouldProcess('Excel performance caches','Back up and reset')){if(Get-Process EXCEL -ErrorAction SilentlyContinue){throw 'Close Excel before resetting caches.'};foreach($path in $cachePaths){if(Test-Path $path){$backup="$path.backup-$stamp";Move-Item $path $backup -Force;New-Item -ItemType Directory $path -Force|Out-Null;Log "[BACKUP] $backup"}}}
+elseif($Action -eq 'RepairOffice'){$client=@("$env:ProgramFiles\Common Files\Microsoft Shared\ClickToRun\OfficeC2RClient.exe","${env:ProgramFiles(x86)}\Common Files\Microsoft Shared\ClickToRun\OfficeC2RClient.exe")|Where-Object{Test-Path $_}|Select-Object -First 1;if(-not $client){throw 'Office repair client was not found.'};if($PSCmdlet.ShouldProcess('Microsoft 365 Apps','Run Quick Repair')){$p=Start-Process $client -ArgumentList '/repair user displaylevel=true forceappshutdown=true' -Wait -PassThru;if($p.ExitCode -ne 0){throw "Office repair exited with code $($p.ExitCode)."}}}}catch{Log "[FAILED] $($_.Exception.Message)";exit 5};Log '[COMPLETE] Repair completed.';exit 0
