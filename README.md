@@ -2,35 +2,19 @@
 
 Created by **Dewald Pretorius**.
 
-A read-only PowerShell toolkit for investigating slow Excel performance, excessive memory usage, startup crashes, add-in conflicts, XLSTART files, temporary files, Office builds, and recent application faults.
+The repository contains the original read-only analyzer plus a guarded `Repair.ps1` helper.
 
-## Checks
+Supported actions:
 
-- Running Excel processes and total memory usage
-- COM and application add-ins
-- XLSTART startup folders
-- Recent Excel-related Application log events
-- Stale or excessive temporary files
-- Microsoft 365 Click-to-Run version and platform
-
-## Run
+- `Diagnose`
+- `ResetPerformanceCaches`
+- `RepairOffice`
 
 ```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File ".\Microsoft_Excel_Performance_and_Crash_Analyzer.ps1"
+.\Microsoft_Excel_Performance_and_Crash_Analyzer.ps1
+.\Repair.ps1 -Action Diagnose
+.\Repair.ps1 -Action ResetPerformanceCaches -WhatIf
+.\Repair.ps1 -Action RepairOffice -Confirm
 ```
 
-Reports are saved to `Desktop\Excel_Performance_Reports` in TXT and CSV format.
-
-## Useful scenarios
-
-- Excel opens slowly
-- Workbooks freeze or stop responding
-- Excel crashes during startup
-- High CPU or memory use
-- Add-in conflicts
-- Problems that disappear in Safe Mode
-- Crashes tied to a particular Office build or workbook
-
-## Safety
-
-The analyzer does not disable add-ins, delete files, modify Office, or repair workbooks. It gathers evidence and provides next-step guidance.
+Close Excel before cache repair. Existing Office cache and telemetry folders are preserved as timestamped backups. Microsoft 365 Apps Quick Repair may require elevation and closes Office applications. Source-reviewed for Windows PowerShell 5.1; not runtime-tested against every Excel or Office build.
